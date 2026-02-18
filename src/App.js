@@ -1,23 +1,314 @@
-import logo from './logo.svg';
+import { useState, useEffect } from 'react';
 import './App.css';
+import { database, auth, initializeAuth, guestsRef } from './firebase';
+import { ref, push, onValue, remove } from 'firebase/database';
 
 function App() {
+  const [guestName, setGuestName] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+  const [particles, setParticles] = useState([]);
+  const [allNames, setAllNames] = useState([]);
+  const [showAdmin, setShowAdmin] = useState(false);
+  const [adminPassword, setAdminPassword] = useState('');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [passwordAttempt, setPasswordAttempt] = useState('');
+
+  const colors = ['#ff6b6b', '#ffd93d', '#ff006e', '#6bcf7f', '#4d96ff', '#ff9f43', '#a29bfe', '#fd79a8'];
+
+  const capitalizeWords = (str) => {
+    return str
+      .trim()
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (guestName.trim()) {
+      const capitalizedName = capitalizeWords(guestName);
+      setGuestName(capitalizedName);
+      saveNameToStorage(capitalizedName);
+      setSubmitted(true);
+      createParticles();
+    }
+  };
+
+  const createParticles = () => {
+    const newParticles = [];
+    for (let i = 0; i < 100; i++) {
+      newParticles.push({
+        id: i,
+        left: Math.random() * 100,
+        delay: Math.random() * 0.5,
+        duration: 2 + Math.random() * 1.5,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        size: 8 + Math.random() * 12,
+      });
+    }
+    setParticles(newParticles);
+  };
+
+  useEffect(() => {
+    if (submitted && particles.length > 0) {
+      const timer = setTimeout(() => {
+        setParticles([]);
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [submitted, particles]);
+
+  useEffect(() => {
+    // Initialize Firebase Auth
+    initializeAuth();
+
+    // Load names from Firebase Realtime Database
+    const listener = onValue(guestsRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const namesList = Object.entries(data).map(([key, value]) => ({
+          id: key,
+          ...value
+        }));
+        setAllNames(namesList);
+      } else {
+        setAllNames([]);
+      }
+    });
+
+    // Load admin password from localStorage
+    const savedPassword = localStorage.getItem('adminPassword');
+    if (savedPassword) {
+      setAdminPassword(savedPassword);
+    } else {
+      // Set default password if not exists
+      setAdminPassword('admin123');
+      localStorage.setItem('adminPassword', 'admin123');
+    }
+
+    return () => listener();
+  }, []);
+
+  const saveNameToStorage = (name) => {
+    const newEntry = {
+      name,
+      timestamp: new Date().toLocaleString()
+    };
+    push(guestsRef, newEntry);
+  };
+
+  const downloadNames = () => {
+    const csvContent = [
+      ['Name', 'Date & Time'],
+      ...allNames.map(entry => [entry.name, entry.timestamp])
+    ]
+      .map(row => row.map(cell => `"${cell}"`).join(','))
+      .join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `guest-names-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const clearAllNames = () => {
+    if (window.confirm('Are you sure you want to clear all guest names?')) {
+      allNames.forEach(entry => {
+        remove(ref(database, `guests/${entry.id}`));
+      });
+      setAllNames([]);
+    }
+  };
+
+  const handleAdminLogin = (e) => {
+    e.preventDefault();
+    if (passwordAttempt === adminPassword) {
+      setIsAuthenticated(true);
+      setPasswordAttempt('');
+    } else {
+      alert('Incorrect password!');
+      setPasswordAttempt('');
+    }
+  };
+
+  const handleCloseAdmin = () => {
+    setShowAdmin(false);
+    setIsAuthenticated(false);
+    setPasswordAttempt('');
+  };
+
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      {showAdmin && (
+        <div className="admin-panel">
+          <div className="admin-content">
+            {!isAuthenticated ? (
+              <div className="password-login">
+                <h2>Admin Access</h2>
+                <p className="login-subtitle">Enter password to view guest names</p>
+                
+                <form onSubmit={handleAdminLogin}>
+                  <input
+                    type="password"
+                    value={passwordAttempt}
+                    onChange={(e) => setPasswordAttempt(e.target.value)}
+                    placeholder="Enter password..."
+                    className="password-input"
+                    autoFocus
+                  />
+                  <button type="submit" className="login-btn">
+                    🔓 Unlock
+                  </button>
+                </form>
+                
+                <button onClick={handleCloseAdmin} className="close-admin-btn">
+                  ✕ Close
+                </button>
+              </div>
+            ) : (
+              <>
+                <h2>Guest Names Collected</h2>
+                <p className="admin-count">Total: {allNames.length} guests</p>
+                
+                {allNames.length > 0 ? (
+                  <>
+                    <div className="names-list">
+                      {allNames.map((entry, index) => (
+                        <div key={index} className="name-entry">
+                          <span className="entry-number">{index + 1}.</span>
+                          <span className="entry-name">{entry.name}</span>
+                          <span className="entry-time">{entry.timestamp}</span>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    <div className="admin-buttons">
+                      <button onClick={downloadNames} className="download-btn">
+                        📥 Download as CSV
+                      </button>
+                      <button onClick={clearAllNames} className="clear-btn">
+                        🗑️ Clear All
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <p className="no-names">No guest names collected yet</p>
+                )}
+                
+                <button onClick={handleCloseAdmin} className="close-admin-btn">
+                  ✕ Close
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+      
+      {!submitted ? (
+        <div className="name-input-container">
+          <div className="input-card">
+            <h1 className="welcome-title">🙏 Welcome 🙏</h1>
+            <p className="welcome-subtitle">Please Enter Your Name</p>
+            
+            <form onSubmit={handleSubmit}>
+              <input
+                type="text"
+                value={guestName}
+                onChange={(e) => setGuestName(e.target.value)}
+                placeholder="Enter your name..."
+                className="name-input"
+                autoFocus
+              />
+              <button type="submit" className="submit-btn">
+                View Invitation
+              </button>
+            </form>
+
+            <button 
+              onClick={() => setShowAdmin(true)} 
+              className="admin-access-btn"
+              title="View collected names"
+            >
+              👁️
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="invitation-container">
+          {particles.map((particle) => (
+            <div
+              key={particle.id}
+              className="particle"
+              style={{
+                left: `${particle.left}%`,
+                backgroundColor: particle.color,
+                width: `${particle.size}px`,
+                height: `${particle.size}px`,
+                animation: `fall ${particle.duration}s linear ${particle.delay}s forwards`,
+              }}
+            />
+          ))}
+          <div className="invitation-wrapper">
+            <div className="namaste-left">🙏</div>
+            <div className="invitation-card">
+              <div className="invitation-header">
+                <div className="decorative-line"></div>
+                <h1 className="invitation-title">
+                  🌹 You are Cordially Invited 🌹
+                </h1>
+                <div className="decorative-line"></div>
+              </div>
+
+              <div className="invitation-guest-name">🌼 Dear {guestName} 🌼</div>
+
+              <div className="invitation-content">
+                <p className="event-description">
+                  You are respectfully invited to join us for a celebration of joy and togetherness.
+                </p>
+                
+                <div className="event-details">
+                  <div className="detail-item">
+                    <span className="detail-icon">🌸</span>
+                    <span className="detail-text">Event Date: [Add Your Date]</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-icon">🌺</span>
+                    <span className="detail-text">Time: [Add Your Time]</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-icon">🌻</span>
+                    <span className="detail-text">Venue: [Add Your Venue]</span>
+                  </div>
+                </div>
+
+                <p className="closing-message">
+                  🌷 Your presence is requested and will be highly appreciated 🌷
+                </p>
+              </div>
+
+              <div className="invitation-footer">
+                <p className="wishes">✨ With warm regards and best wishes ✨</p>
+                <p className="host-name">[Your Name]</p>
+                <div className="decorative-line"></div>
+              </div>
+            </div>
+
+            <div className="namaste-right">🙏</div>
+          </div>
+
+          <div className="action-buttons">
+            <button 
+              onClick={() => window.print()} 
+              className="print-btn"
+            >
+              🖨️ Print Invitation
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
