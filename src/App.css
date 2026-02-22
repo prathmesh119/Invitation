@@ -879,7 +879,254 @@ body {
     width: 100%;
   }
 }
+/* Envelope Styles */
+.envelope-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  width: 100%;
+  padding: 20px;
+}
 
+.envelope {
+  position: relative;
+  width: 400px;
+  height: 280px;
+  background: linear-gradient(135deg, #f5f5f5 0%, #ffffff 100%);
+  border-radius: 8px;
+  box-shadow: 0 15px 60px rgba(0, 0, 0, 0.3),
+              0 0 0 1px rgba(0, 0, 0, 0.1),
+              inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  overflow: visible;
+  animation: envelopeSlideIn 0.8s ease-out;
+  perspective: 1200px;
+}
+
+.envelope:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.4),
+              0 0 0 1px rgba(0, 0, 0, 0.1),
+              inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.envelope:hover .envelope-flap-top {
+  transform: rotateX(-15deg);
+}
+
+/* Envelope Top Flap */
+.envelope-flap-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 140px;
+  background: linear-gradient(135deg, #d4a574 0%, #c9945c 100%);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  transform-origin: top;
+  transition: all 0.4s ease;
+  box-shadow: inset 0 -2px 10px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+}
+
+/* Envelope Back Flap (hidden by default) */
+.envelope-flap-bottom {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 140px;
+  background: linear-gradient(135deg, #c9945c 0%, #b8824e 100%);
+  clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+  transform: scaleY(0);
+  transform-origin: bottom;
+  transition: all 0.5s ease 0.3s;
+  box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.15);
+  z-index: 9;
+}
+
+.envelope-body {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to bottom, #f9f9f9 0%, #ffffff 100%);
+  border: 2px solid #e0e0e0;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  text-align: center;
+  transition: all 0.5s ease;
+  transform: translateY(0);
+  z-index: 5;
+}
+
+/* Animation when envelope is clicked */
+.envelope.opening .envelope-flap-top {
+  animation: flapOpen 0.8s ease-out forwards;
+}
+
+.envelope.opening .envelope-flap-bottom {
+  animation: backFlapOpen 0.8s ease-out forwards;
+  transform: scaleY(1);
+}
+
+.envelope.opening .envelope-body {
+  animation: envelopeSlideOut 0.8s ease-out forwards;
+}
+
+.envelope-front {
+  z-index: 2;
+  animation: envelopePulse 2s ease-in-out infinite;
+}
+
+.envelope-text {
+  font-size: 2.5rem;
+  color: #8b5a3c;
+  margin: 0;
+  font-weight: 700;
+  font-family: 'Georgia', serif;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 15px;
+}
+
+.envelope-subtext {
+  font-size: 1.1rem;
+  color: #b8860b;
+  margin: 0;
+  font-style: italic;
+  font-weight: 500;
+}
+
+@keyframes envelopeSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.85) translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes flapOpen {
+  0% {
+    transform: rotateX(0deg);
+    opacity: 1;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: rotateX(-180deg);
+    opacity: 0;
+  }
+}
+
+@keyframes backFlapOpen {
+  0% {
+    transform: rotateX(0deg) scaleY(1);
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: rotateX(180deg) scaleY(1);
+    opacity: 0;
+  }
+}
+
+@keyframes envelopeSlideOut {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(30px) scale(0.95);
+    opacity: 0;
+  }
+}
+
+@keyframes envelopePulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+/* Celebration Emojis */
+.celebration-emoji {
+  position: fixed;
+  font-size: 3rem;
+  pointer-events: none;
+  z-index: 1500;
+  bottom: 0;
+  user-select: none;
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .celebration-emoji {
+    display: block;
+  }
+}
+
+@keyframes celebrationRise {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-100vh) scale(0.5) rotate(720deg);
+  }
+}
+
+@media (max-width: 768px) {
+  .envelope {
+    width: 320px;
+    height: 220px;
+  }
+
+  .envelope-text {
+    font-size: 2rem;
+  }
+
+  .envelope-subtext {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .envelope {
+    width: 280px;
+    height: 190px;
+  }
+
+  .envelope-text {
+    font-size: 1.6rem;
+  }
+
+  .envelope-subtext {
+    font-size: 0.9rem;
+  }
+
+  .envelope-body {
+    padding: 30px 20px;
+  }
+}
 @media (max-width: 480px) {
   .name-input-container {
     padding: 15px;

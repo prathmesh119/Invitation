@@ -1,7 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import './App.css';
 import { database, auth, initializeAuth, guestsRef } from './firebase';
 import { ref, push, onValue, remove } from 'firebase/database';
+
+// Move colors outside component to avoid recreation on every render
+const colors = ['#ff6b6b', '#ffd93d', '#ff006e', '#6bcf7f', '#4d96ff', '#ff9f43', '#a29bfe', '#fd79a8'];
 
 function App() {
   const [guestName, setGuestName] = useState('');
@@ -12,6 +15,30 @@ function App() {
   const [adminPassword, setAdminPassword] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [passwordAttempt, setPasswordAttempt] = useState('');
+  const [envelopeOpened, setEnvelopeOpened] = useState(false);
+  const [envelopeAnimating, setEnvelopeAnimating] = useState(false);
+  const [celebrationEmojis, setCelebrationEmojis] = useState([]);
+
+  const handleEnvelopeClick = () => {
+    setEnvelopeAnimating(true);
+    createCelebrationEmojis();
+    setTimeout(() => {
+      setEnvelopeOpened(true);
+      createParticles();
+    }, 800);
+  };
+
+  const createCelebrationEmojis = () => {
+    // Reduced from 12 to 8 emojis for better performance
+    const emojis = Array.from({ length: 8 }, (_, i) => ({
+      id: i,
+      left: i < 4 ? Math.random() * 20 : 80 + Math.random() * 20,
+      delay: Math.random() * 0.3,
+      duration: 2 + Math.random() * 1,
+      emoji: '🎉',
+    }));
+    setCelebrationEmojis(emojis);
+  };
 
   const colors = ['#ff6b6b', '#ffd93d', '#ff006e', '#6bcf7f', '#4d96ff', '#ff9f43', '#a29bfe', '#fd79a8'];
 
@@ -35,17 +62,15 @@ function App() {
   };
 
   const createParticles = () => {
-    const newParticles = [];
-    for (let i = 0; i < 100; i++) {
-      newParticles.push({
-        id: i,
-        left: Math.random() * 100,
-        delay: Math.random() * 0.5,
-        duration: 2 + Math.random() * 1.5,
-        color: colors[Math.floor(Math.random() * colors.length)],
-        size: 8 + Math.random() * 12,
-      });
-    }
+    // Reduced from 100 to 40 particles for better performance
+    const newParticles = Array.from({ length: 40 }, (_, i) => ({
+      id: i,
+      left: Math.random() * 100,
+      delay: Math.random() * 0.5,
+      duration: 2 + Math.random() * 1.5,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      size: 8 + Math.random() * 12,
+    }));
     setParticles(newParticles);
   };
 
@@ -251,62 +276,95 @@ function App() {
               }}
             />
           ))}
-          <div className="invitation-wrapper">
-            <div className="namaste-left">🙏</div>
-            <div className="invitation-card">
-              <div className="invitation-header">
-                <div className="decorative-line"></div>
-                <h1 className="invitation-title">
-                  🌹 You are Cordially Invited 🌹
-                </h1>
-                <div className="decorative-line"></div>
+
+          {!envelopeOpened ? (
+            <>
+              <div className="envelope-container">
+                <div className={`envelope ${envelopeAnimating ? 'opening' : ''}`} onClick={handleEnvelopeClick}>
+                  <div className="envelope-flap-top"></div>
+                  <div className="envelope-flap-bottom"></div>
+                  <div className="envelope-body">
+                    <div className="envelope-front">
+                      <h2 className="envelope-text">You are Invited</h2>
+                      <p className="envelope-subtext">Click to open</p>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div className="invitation-guest-name">🌼 Dear {guestName} 🌼</div>
+              {celebrationEmojis.map((emoji) => (
+                <div
+                  key={emoji.id}
+                  className="celebration-emoji"
+                  style={{
+                    left: `${emoji.left}%`,
+                    animation: `celebrationRise ${emoji.duration}s ease-out ${emoji.delay}s forwards`,
+                  }}
+                >
+                  {emoji.emoji}
+                </div>
+              ))}
+            </>
+          ) : (
+            <>
+              <div className="invitation-wrapper">
+                <div className="namaste-left">🙏</div>
+                <div className="invitation-card">
+                  <div className="invitation-header">
+                    <div className="decorative-line"></div>
+                    <h1 className="invitation-title">
+                      🌹 You are Cordially Invited 🌹
+                    </h1>
+                    <div className="decorative-line"></div>
+                  </div>
 
-              <div className="invitation-content">
-                <p className="event-description">
-                  You are respectfully invited to join us for a celebration of joy and togetherness.
-                </p>
-                
-                <div className="event-details">
-                  <div className="detail-item">
-                    <span className="detail-icon">🌸</span>
-                    <span className="detail-text">Event Date: [Add Your Date]</span>
+                  <div className="invitation-guest-name">🌼 Dear {guestName} 🌼</div>
+
+                  <div className="invitation-content">
+                    <p className="event-description">
+                      You are respectfully invited to join us for a celebration of joy and togetherness.
+                    </p>
+                    
+                    <div className="event-details">
+                      <div className="detail-item">
+                        <span className="detail-icon">🌸</span>
+                        <span className="detail-text">Event Date: [Add Your Date]</span>
+                      </div>
+                      <div className="detail-item">
+                        <span className="detail-icon">🌺</span>
+                        <span className="detail-text">Time: [Add Your Time]</span>
+                      </div>
+                      <div className="detail-item">
+                        <span className="detail-icon">🌻</span>
+                        <span className="detail-text">Venue: [Add Your Venue]</span>
+                      </div>
+                    </div>
+
+                    <p className="closing-message">
+                      🌷 Your presence is requested and will be highly appreciated 🌷
+                    </p>
                   </div>
-                  <div className="detail-item">
-                    <span className="detail-icon">🌺</span>
-                    <span className="detail-text">Time: [Add Your Time]</span>
-                  </div>
-                  <div className="detail-item">
-                    <span className="detail-icon">🌻</span>
-                    <span className="detail-text">Venue: [Add Your Venue]</span>
+
+                  <div className="invitation-footer">
+                    <p className="wishes">✨ With warm regards and best wishes ✨</p>
+                    <p className="host-name">[Your Name]</p>
+                    <div className="decorative-line"></div>
                   </div>
                 </div>
 
-                <p className="closing-message">
-                  🌷 Your presence is requested and will be highly appreciated 🌷
-                </p>
+                <div className="namaste-right">🙏</div>
               </div>
 
-              <div className="invitation-footer">
-                <p className="wishes">✨ With warm regards and best wishes ✨</p>
-                <p className="host-name">[Your Name]</p>
-                <div className="decorative-line"></div>
+              <div className="action-buttons">
+                <button 
+                  onClick={() => window.print()} 
+                  className="print-btn"
+                >
+                  🖨️ Print Invitation
+                </button>
               </div>
-            </div>
-
-            <div className="namaste-right">🙏</div>
-          </div>
-
-          <div className="action-buttons">
-            <button 
-              onClick={() => window.print()} 
-              className="print-btn"
-            >
-              🖨️ Print Invitation
-            </button>
-          </div>
+            </>
+          )}
         </div>
       )}
     </div>
