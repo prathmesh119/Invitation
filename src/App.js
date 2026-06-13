@@ -1,22 +1,44 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import './App.css';
 import { database, auth, initializeAuth, guestsRef } from './firebase';
 import { ref, push, onValue, remove } from 'firebase/database';
 
-// Move colors outside component to avoid recreation on every render
+// Import components
+import WelcomeCard from './components/WelcomeCard';
+import EnvelopePage from './components/EnvelopePage';
+import ThankYouPage from './components/ThankYouPage';
+import AdminPanel from './components/AdminPanel';
+import PhotoModal from './components/PhotoModal';
+
+// Colors for particles
 const colors = ['#ff6b6b', '#ffd93d', '#ff006e', '#6bcf7f', '#4d96ff', '#ff9f43', '#a29bfe', '#fd79a8'];
 
+const capitalizeWords = (str) => {
+  return str
+    .trim()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+};
+
 function App() {
+  // Form and submission state
   const [guestName, setGuestName] = useState('');
   const [submitted, setSubmitted] = useState(false);
+
+  // Envelope and animations
+  const [envelopeOpened, setEnvelopeOpened] = useState(false);
   const [particles, setParticles] = useState([]);
-  const [allNames, setAllNames] = useState([]);
+  const [celebrationEmojis, setCelebrationEmojis] = useState([]);
+
+  // Admin state
   const [showAdmin, setShowAdmin] = useState(false);
   const [adminPassword, setAdminPassword] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [passwordAttempt, setPasswordAttempt] = useState('');
-  const [envelopeOpened, setEnvelopeOpened] = useState(false);
-  const [celebrationEmojis, setCelebrationEmojis] = useState([]);
+  const [allNames, setAllNames] = useState([]);
+
+  // Photo state
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [collectedPhotos, setCollectedPhotos] = useState(() => {
     try {
@@ -27,75 +49,8 @@ function App() {
     }
   });
 
-  const handleEnvelopeClick = () => {
-    // Open envelope immediately (no animation)
-    createCelebrationEmojis();
-    setEnvelopeOpened(true);
-    createParticles();
-  };
-
-  const createCelebrationEmojis = () => {
-    // Reduced from 12 to 8 emojis for better performance
-    const emojis = Array.from({ length: 8 }, (_, i) => ({
-      id: i,
-      left: i < 4 ? Math.random() * 20 : 80 + Math.random() * 20,
-      delay: Math.random() * 0.3,
-      duration: 2 + Math.random() * 1,
-      emoji: '🎉',
-    }));
-    setCelebrationEmojis(emojis);
-  };
-
-  const colors = ['#ff6b6b', '#ffd93d', '#ff006e', '#6bcf7f', '#4d96ff', '#ff9f43', '#a29bfe', '#fd79a8'];
-
-  const capitalizeWords = (str) => {
-    return str
-      .trim()
-      .split(' ')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join(' ');
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (guestName.trim()) {
-      const capitalizedName = capitalizeWords(guestName);
-      setGuestName(capitalizedName);
-      saveNameToStorage(capitalizedName);
-      setSubmitted(true);
-      createParticles();
-    }
-  };
-
-  const handleOpenPhotoModal = () => setShowPhotoModal(true);
-
-  const handlePhotoFiles = (files) => {
-    const readers = Array.from(files).map((file) => {
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          resolve({ name: file.name, data: reader.result, size: file.size });
-        };
-        reader.readAsDataURL(file);
-      });
-    });
-
-    Promise.all(readers).then((imgs) => {
-      const merged = [...imgs, ...collectedPhotos];
-      setCollectedPhotos(merged);
-      try { localStorage.setItem('collectedPhotos', JSON.stringify(merged)); } catch (e) {}
-    });
-  };
-
-  const handleClearPhotos = () => {
-    if (window.confirm('Clear all collected photos?')) {
-      setCollectedPhotos([]);
-      localStorage.removeItem('collectedPhotos');
-    }
-  };
-
+  // Particle generation
   const createParticles = () => {
-    // Reduced from 100 to 40 particles for better performance
     const newParticles = Array.from({ length: 40 }, (_, i) => ({
       id: i,
       left: Math.random() * 100,
@@ -107,52 +62,60 @@ function App() {
     setParticles(newParticles);
   };
 
-  useEffect(() => {
-    if (submitted && particles.length > 0) {
-      const timer = setTimeout(() => {
-        setParticles([]);
-      }, 4000);
-      return () => clearTimeout(timer);
+  // Celebration emojis
+  const createCelebrationEmojis = () => {
+    const emojis = Array.from({ length: 8 }, (_, i) => ({
+      id: i,
+      left: i < 4 ? Math.random() * 20 : 80 + Math.random() * 20,
+      delay: Math.random() * 0.3,
+      duration: 2 + Math.random() * 1,
+      emoji: '🎉',
+    }));
+    setCelebrationEmojis(emojis);
+  };
+
+  // Handle name form submission
+  const handleSubmit = (name) => {
+    if (name.trim()) {
+      const capitalizedName = capitalizeWords(name);
+      setGuestName(capitalizedName);
+      saveNameToStorage(capitalizedName);
+      setSubmitted(true);
+      createParticles();
     }
-  }, [submitted, particles]);
+  };
 
-  useEffect(() => {
-    // Initialize Firebase Auth
-    initializeAuth();
+  // Handle envelope click
+  const handleEnvelopeClick = () => {
+    createCelebrationEmojis();
+    setEnvelopeOpened(true);
+    createParticles();
+  };
 
-    // Load names from Firebase Realtime Database
-    const listener = onValue(guestsRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const namesList = Object.entries(data).map(([key, value]) => ({
-          id: key,
-          ...value
-        }));
-        setAllNames(namesList);
-      } else {
-        setAllNames([]);
-      }
-    });
+  // Handle back to welcome page
+  const handleReset = () => {
+    setSubmitted(false);
+    setEnvelopeOpened(false);
+    setParticles([]);
+    setCelebrationEmojis([]);
+  };
 
-    // Load admin password from localStorage
-    const savedPassword = localStorage.getItem('adminPassword');
-    if (savedPassword) {
-      setAdminPassword(savedPassword);
+  // Admin handlers
+  const handleAdminLogin = (e) => {
+    e.preventDefault();
+    if (passwordAttempt === adminPassword) {
+      setIsAuthenticated(true);
+      setPasswordAttempt('');
     } else {
-      // Set default password if not exists
-      setAdminPassword('admin123');
-      localStorage.setItem('adminPassword', 'admin123');
+      alert('Incorrect password!');
+      setPasswordAttempt('');
     }
+  };
 
-    return () => listener();
-  }, []);
-
-  const saveNameToStorage = (name) => {
-    const newEntry = {
-      name,
-      timestamp: new Date().toLocaleString()
-    };
-    push(guestsRef, newEntry);
+  const handleCloseAdmin = () => {
+    setShowAdmin(false);
+    setIsAuthenticated(false);
+    setPasswordAttempt('');
   };
 
   const downloadNames = () => {
@@ -181,225 +144,129 @@ function App() {
     }
   };
 
-  const handleAdminLogin = (e) => {
-    e.preventDefault();
-    if (passwordAttempt === adminPassword) {
-      setIsAuthenticated(true);
-      setPasswordAttempt('');
-    } else {
-      alert('Incorrect password!');
-      setPasswordAttempt('');
+  // Photo handlers
+  const handlePhotoFiles = (files) => {
+    const readers = Array.from(files).map((file) => {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          resolve({ name: file.name, data: reader.result, size: file.size });
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+
+    Promise.all(readers).then((imgs) => {
+      const merged = [...imgs, ...collectedPhotos];
+      setCollectedPhotos(merged);
+      try { localStorage.setItem('collectedPhotos', JSON.stringify(merged)); } catch (e) {}
+    });
+  };
+
+  const handleClearPhotos = () => {
+    if (window.confirm('Clear all collected photos?')) {
+      setCollectedPhotos([]);
+      localStorage.removeItem('collectedPhotos');
     }
   };
 
-  const handleCloseAdmin = () => {
-    setShowAdmin(false);
-    setIsAuthenticated(false);
-    setPasswordAttempt('');
+  // Firebase setup
+  const saveNameToStorage = (name) => {
+    const newEntry = {
+      name,
+      timestamp: new Date().toLocaleString()
+    };
+    push(guestsRef, newEntry);
   };
+
+  // Particle cleanup
+  useEffect(() => {
+    if (submitted && particles.length > 0) {
+      const timer = setTimeout(() => {
+        setParticles([]);
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [submitted, particles]);
+
+  // Initialize Firebase and load data
+  useEffect(() => {
+    initializeAuth();
+
+    const listener = onValue(guestsRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const namesList = Object.entries(data).map(([key, value]) => ({
+          id: key,
+          ...value
+        }));
+        setAllNames(namesList);
+      } else {
+        setAllNames([]);
+      }
+    });
+
+    const savedPassword = localStorage.getItem('adminPassword');
+    if (savedPassword) {
+      setAdminPassword(savedPassword);
+    } else {
+      setAdminPassword('admin123');
+      localStorage.setItem('adminPassword', 'admin123');
+    }
+
+    return () => listener();
+  }, []);
 
   return (
     <div className="App">
+      {/* Admin Panel */}
       {showAdmin && (
-        <div className="admin-panel">
-          <div className="admin-content">
-            {!isAuthenticated ? (
-              <div className="password-login">
-                <h2>Admin Access</h2>
-                <p className="login-subtitle">Enter password to view guest names</p>
-                
-                <form onSubmit={handleAdminLogin}>
-                  <input
-                    type="password"
-                    value={passwordAttempt}
-                    onChange={(e) => setPasswordAttempt(e.target.value)}
-                    placeholder="Enter password..."
-                    className="password-input"
-                    autoFocus
-                  />
-                  <button type="submit" className="login-btn">
-                    🔓 Unlock
-                  </button>
-                </form>
-                
-                <button onClick={handleCloseAdmin} className="close-admin-btn">
-                  ✕ Close
-                </button>
-              </div>
-            ) : (
-              <>
-                <h2>Guest Names Collected</h2>
-                <p className="admin-count">Total: {allNames.length} guests</p>
-                
-                {allNames.length > 0 ? (
-                  <>
-                    <div className="names-list">
-                      {allNames.map((entry, index) => (
-                        <div key={index} className="name-entry">
-                          <span className="entry-number">{index + 1}.</span>
-                          <span className="entry-name">{entry.name}</span>
-                          <span className="entry-time">{entry.timestamp}</span>
-                        </div>
-                      ))}
-                    </div>
-                    
-                    <div className="admin-buttons">
-                      <button onClick={downloadNames} className="download-btn">
-                        📥 Download as CSV
-                      </button>
-                      <button onClick={clearAllNames} className="clear-btn">
-                        🗑️ Clear All
-                      </button>
-                    </div>
-                  </>
-                ) : (
-                  <p className="no-names">No guest names collected yet</p>
-                )}
-                
-                <button onClick={handleCloseAdmin} className="close-admin-btn">
-                  ✕ Close
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-      )}
-      
-      {!submitted ? (
-        <div className="name-input-container">
-          <div className="input-card">
-            <h1 className="welcome-title">🙏 Welcome 🙏</h1>
-            <p className="welcome-subtitle">Please Enter Your Name</p>
-            
-            <form onSubmit={handleSubmit}>
-              <input
-                type="text"
-                value={guestName}
-                onChange={(e) => setGuestName(e.target.value)}
-                placeholder="Enter your name..."
-                className="name-input"
-                autoFocus
-              />
-              <button type="submit" className="submit-btn">
-                View Invitation
-              </button>
-            </form>
-
-            <button 
-              onClick={() => setShowAdmin(true)} 
-              className="admin-access-btn"
-              title="View collected names"
-            >
-              👁️
-            </button>
-              <button
-                className="collect-photos-btn"
-                onClick={handleOpenPhotoModal}
-              >
-                📸 Collect Photos
-              </button>
-          </div>
-        </div>
-      ) : (
-        <div className="invitation-container">
-          {particles.map((particle) => (
-            <div
-              key={particle.id}
-              className="particle"
-              style={{
-                left: `${particle.left}%`,
-                backgroundColor: particle.color,
-                width: `${particle.size}px`,
-                height: `${particle.size}px`,
-                animation: `fall ${particle.duration}s linear ${particle.delay}s forwards`,
-              }}
-            />
-          ))}
-
-          {!envelopeOpened ? (
-            <>
-              <div className="envelope-container">
-                <div className="envelope" onClick={handleEnvelopeClick}>
-                  <div className="envelope-flap-top"></div>
-                  <div className="envelope-flap-bottom"></div>
-                  <div className="envelope-body">
-                    <div className="envelope-front">
-                      <h2 className="envelope-text">You are Invited</h2>
-                      <p className="envelope-subtext">Click to open</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {celebrationEmojis.map((emoji) => (
-                <div
-                  key={emoji.id}
-                  className="celebration-emoji"
-                  style={{
-                    left: `${emoji.left}%`,
-                    animation: `celebrationRise ${emoji.duration}s ease-out ${emoji.delay}s forwards`,
-                  }}
-                >
-                  {emoji.emoji}
-                </div>
-              ))}
-            </>
-          ) : (
-            <>
-              <div className="thankyou-wrapper">
-                <div className="thankyou-card">
-                  <h1 className="thank-title">🙏 Thank You 🙏</h1>
-                  <p className="thank-guest">Dear {guestName || 'Friend'},</p>
-                  <p className="thank-message">
-                    Thank you for opening this invitation. Your presence and warm wishes mean the world to us.
-                    We're excited to share this special moment with you.
-                  </p>
-                  <div className="thank-actions">
-                    <button
-                      className="back-btn"
-                      onClick={() => {
-                        setSubmitted(false);
-                        setEnvelopeOpened(false);
-                        setParticles([]);
-                        setCelebrationEmojis([]);
-                      }}
-                    >
-                      Back
-                    </button>
-                    <button
-                      className="print-btn"
-                      onClick={() => window.print()}
-                    >
-                      🖨️ Print Note
-                    </button>
-                    <button className="collect-photos-btn" onClick={handleOpenPhotoModal}>📸 Collect Photos</button>
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-        </div>
+        <AdminPanel
+          isAuthenticated={isAuthenticated}
+          passwordAttempt={passwordAttempt}
+          setPasswordAttempt={setPasswordAttempt}
+          allNames={allNames}
+          onAdminLogin={handleAdminLogin}
+          onDownloadNames={downloadNames}
+          onClearNames={clearAllNames}
+          onClose={handleCloseAdmin}
+        />
       )}
 
+      {/* Photo Modal */}
       {showPhotoModal && (
-        <div className="photo-modal" onClick={() => setShowPhotoModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h3>Collect Photos</h3>
-            <p>Select images to add to the collection. They are stored locally in your browser.</p>
-            <input type="file" accept="image/*" multiple onChange={(e) => handlePhotoFiles(e.target.files)} />
+        <PhotoModal
+          collectedPhotos={collectedPhotos}
+          onPhotoFilesSelected={handlePhotoFiles}
+          onClearPhotos={handleClearPhotos}
+          onClose={() => setShowPhotoModal(false)}
+        />
+      )}
 
-            <div className="photo-grid">
-              {collectedPhotos.map((p, idx) => (
-                <img key={idx} src={p.data} alt={p.name} title={p.name} />
-              ))}
-            </div>
-
-            <div className="modal-actions">
-              <button onClick={() => setShowPhotoModal(false)} className="back-btn">Close</button>
-              <button onClick={handleClearPhotos} className="back-btn">Clear All</button>
-            </div>
-          </div>
-        </div>
+      {/* Welcome Card */}
+      {!submitted ? (
+        <WelcomeCard
+          guestName={guestName}
+          setGuestName={setGuestName}
+          onSubmit={handleSubmit}
+          onAdminClick={() => setShowAdmin(true)}
+          onPhotoClick={() => setShowPhotoModal(true)}
+        />
+      ) : !envelopeOpened ? (
+        // Envelope Page
+        <EnvelopePage
+          particles={particles}
+          celebrationEmojis={celebrationEmojis}
+          onEnvelopeClick={handleEnvelopeClick}
+        />
+      ) : (
+        // Thank You Page
+        <ThankYouPage
+          guestName={guestName}
+          particles={particles}
+          onReset={handleReset}
+          onPhotoClick={() => setShowPhotoModal(true)}
+        />
       )}
     </div>
   );
