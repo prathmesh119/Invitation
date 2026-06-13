@@ -40,6 +40,8 @@ function App() {
 
   // Photo state
   const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [isPhotoAuthenticated, setIsPhotoAuthenticated] = useState(false);
+  const [photoPasswordAttempt, setPhotoPasswordAttempt] = useState('');
   const [collectedPhotos, setCollectedPhotos] = useState(() => {
     try {
       const raw = localStorage.getItem('collectedPhotos');
@@ -116,6 +118,16 @@ function App() {
     setShowAdmin(false);
     setIsAuthenticated(false);
     setPasswordAttempt('');
+  };
+
+  const handlePhotoLogin = () => {
+    if (photoPasswordAttempt === adminPassword) {
+      setIsPhotoAuthenticated(true);
+      setPhotoPasswordAttempt('');
+    } else {
+      alert('Incorrect password!');
+      setPhotoPasswordAttempt('');
+    }
   };
 
   const downloadNames = () => {
@@ -239,7 +251,16 @@ function App() {
           collectedPhotos={collectedPhotos}
           onPhotoFilesSelected={handlePhotoFiles}
           onClearPhotos={handleClearPhotos}
-          onClose={() => setShowPhotoModal(false)}
+          isPhotoAuthenticated={isPhotoAuthenticated}
+          photoPasswordAttempt={photoPasswordAttempt}
+          setPhotoPasswordAttempt={setPhotoPasswordAttempt}
+          onPhotoLogin={handlePhotoLogin}
+          adminPassword={adminPassword}
+          onClose={() => {
+            setShowPhotoModal(false);
+            setIsPhotoAuthenticated(false);
+            setPhotoPasswordAttempt('');
+          }}
         />
       )}
 
