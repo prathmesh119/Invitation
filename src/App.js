@@ -250,7 +250,6 @@ function App() {
           setGuestName={setGuestName}
           onSubmit={handleSubmit}
           onAdminClick={() => setShowAdmin(true)}
-          onPhotoClick={() => setShowPhotoModal(true)}
         />
       ) : !envelopeOpened ? (
         // Envelope Page

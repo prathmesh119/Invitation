@@ -4,8 +4,7 @@ const WelcomeCard = ({
   guestName, 
   setGuestName, 
   onSubmit, 
-  onAdminClick, 
-  onPhotoClick 
+  onAdminClick
 }) => {
   const handleFormSubmit = (e) => {
     e.preventDefault();
@@ -38,12 +37,6 @@ const WelcomeCard = ({
           title="View collected names"
         >
           👁️
-        </button>
-        <button
-          className="collect-photos-btn"
-          onClick={onPhotoClick}
-        >
-          📸 Collect Photos
         </button>
       </div>
     </div>
