@@ -16,16 +16,13 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [passwordAttempt, setPasswordAttempt] = useState('');
   const [envelopeOpened, setEnvelopeOpened] = useState(false);
-  const [envelopeAnimating, setEnvelopeAnimating] = useState(false);
   const [celebrationEmojis, setCelebrationEmojis] = useState([]);
 
   const handleEnvelopeClick = () => {
-    setEnvelopeAnimating(true);
+    // Open envelope immediately (no animation)
     createCelebrationEmojis();
-    setTimeout(() => {
-      setEnvelopeOpened(true);
-      createParticles();
-    }, 800);
+    setEnvelopeOpened(true);
+    createParticles();
   };
 
   const createCelebrationEmojis = () => {
@@ -280,7 +277,7 @@ function App() {
           {!envelopeOpened ? (
             <>
               <div className="envelope-container">
-                <div className={`envelope ${envelopeAnimating ? 'opening' : ''}`} onClick={handleEnvelopeClick}>
+                <div className="envelope" onClick={handleEnvelopeClick}>
                   <div className="envelope-flap-top"></div>
                   <div className="envelope-flap-bottom"></div>
                   <div className="envelope-body">
