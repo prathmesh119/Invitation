@@ -17,6 +17,15 @@ function App() {
   const [passwordAttempt, setPasswordAttempt] = useState('');
   const [envelopeOpened, setEnvelopeOpened] = useState(false);
   const [celebrationEmojis, setCelebrationEmojis] = useState([]);
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [collectedPhotos, setCollectedPhotos] = useState(() => {
+    try {
+      const raw = localStorage.getItem('collectedPhotos');
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) {
+      return [];
+    }
+  });
 
   const handleEnvelopeClick = () => {
     // Open envelope immediately (no animation)
@@ -55,6 +64,33 @@ function App() {
       saveNameToStorage(capitalizedName);
       setSubmitted(true);
       createParticles();
+    }
+  };
+
+  const handleOpenPhotoModal = () => setShowPhotoModal(true);
+
+  const handlePhotoFiles = (files) => {
+    const readers = Array.from(files).map((file) => {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          resolve({ name: file.name, data: reader.result, size: file.size });
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+
+    Promise.all(readers).then((imgs) => {
+      const merged = [...imgs, ...collectedPhotos];
+      setCollectedPhotos(merged);
+      try { localStorage.setItem('collectedPhotos', JSON.stringify(merged)); } catch (e) {}
+    });
+  };
+
+  const handleClearPhotos = () => {
+    if (window.confirm('Clear all collected photos?')) {
+      setCollectedPhotos([]);
+      localStorage.removeItem('collectedPhotos');
     }
   };
 
@@ -256,6 +292,12 @@ function App() {
             >
               👁️
             </button>
+              <button
+                className="collect-photos-btn"
+                onClick={handleOpenPhotoModal}
+              >
+                📸 Collect Photos
+              </button>
           </div>
         </div>
       ) : (
@@ -330,11 +372,33 @@ function App() {
                     >
                       🖨️ Print Note
                     </button>
+                    <button className="collect-photos-btn" onClick={handleOpenPhotoModal}>📸 Collect Photos</button>
                   </div>
                 </div>
               </div>
             </>
           )}
+        </div>
+      )}
+
+      {showPhotoModal && (
+        <div className="photo-modal" onClick={() => setShowPhotoModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h3>Collect Photos</h3>
+            <p>Select images to add to the collection. They are stored locally in your browser.</p>
+            <input type="file" accept="image/*" multiple onChange={(e) => handlePhotoFiles(e.target.files)} />
+
+            <div className="photo-grid">
+              {collectedPhotos.map((p, idx) => (
+                <img key={idx} src={p.data} alt={p.name} title={p.name} />
+              ))}
+            </div>
+
+            <div className="modal-actions">
+              <button onClick={() => setShowPhotoModal(false)} className="back-btn">Close</button>
+              <button onClick={handleClearPhotos} className="back-btn">Clear All</button>
+            </div>
+          </div>
         </div>
       )}
     </div>
