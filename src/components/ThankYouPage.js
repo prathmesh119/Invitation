@@ -37,12 +37,6 @@ const ThankYouPage = ({
             >
               Back
             </button>
-            <button
-              className="print-btn"
-              onClick={() => window.print()}
-            >
-              🖨️ Print Note
-            </button>
             <button className="collect-photos-btn" onClick={onPhotoClick}>
               📸 Collect Photos
             </button>
