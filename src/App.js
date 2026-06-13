@@ -307,61 +307,34 @@ function App() {
             </>
           ) : (
             <>
-              <div className="invitation-wrapper">
-                <div className="namaste-left">🙏</div>
-                <div className="invitation-card">
-                  <div className="invitation-header">
-                    <div className="decorative-line"></div>
-                    <h1 className="invitation-title">
-                      🌹 You are Cordially Invited 🌹
-                    </h1>
-                    <div className="decorative-line"></div>
-                  </div>
-
-                  <div className="invitation-guest-name">🌼 Dear {guestName} 🌼</div>
-
-                  <div className="invitation-content">
-                    <p className="event-description">
-                      You are respectfully invited to join us for a celebration of joy and togetherness.
-                    </p>
-                    
-                    <div className="event-details">
-                      <div className="detail-item">
-                        <span className="detail-icon">🌸</span>
-                        <span className="detail-text">Event Date: [Add Your Date]</span>
-                      </div>
-                      <div className="detail-item">
-                        <span className="detail-icon">🌺</span>
-                        <span className="detail-text">Time: [Add Your Time]</span>
-                      </div>
-                      <div className="detail-item">
-                        <span className="detail-icon">🌻</span>
-                        <span className="detail-text">Venue: [Add Your Venue]</span>
-                      </div>
-                    </div>
-
-                    <p className="closing-message">
-                      🌷 Your presence is requested and will be highly appreciated 🌷
-                    </p>
-                  </div>
-
-                  <div className="invitation-footer">
-                    <p className="wishes">✨ With warm regards and best wishes ✨</p>
-                    <p className="host-name">[Your Name]</p>
-                    <div className="decorative-line"></div>
+              <div className="thankyou-wrapper">
+                <div className="thankyou-card">
+                  <h1 className="thank-title">🙏 Thank You 🙏</h1>
+                  <p className="thank-guest">Dear {guestName || 'Friend'},</p>
+                  <p className="thank-message">
+                    Thank you for opening this invitation. Your presence and warm wishes mean the world to us.
+                    We're excited to share this special moment with you.
+                  </p>
+                  <div className="thank-actions">
+                    <button
+                      className="back-btn"
+                      onClick={() => {
+                        setSubmitted(false);
+                        setEnvelopeOpened(false);
+                        setParticles([]);
+                        setCelebrationEmojis([]);
+                      }}
+                    >
+                      Back
+                    </button>
+                    <button
+                      className="print-btn"
+                      onClick={() => window.print()}
+                    >
+                      🖨️ Print Note
+                    </button>
                   </div>
                 </div>
-
-                <div className="namaste-right">🙏</div>
-              </div>
-
-              <div className="action-buttons">
-                <button 
-                  onClick={() => window.print()} 
-                  className="print-btn"
-                >
-                  🖨️ Print Invitation
-                </button>
               </div>
             </>
           )}

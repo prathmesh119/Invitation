@@ -1127,6 +1127,75 @@ body {
     padding: 30px 20px;
   }
 }
+
+/* Thank-you note styles */
+.thankyou-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: 40px 20px;
+}
+
+.thankyou-card {
+  max-width: 760px;
+  background: linear-gradient(180deg, #fffdf8 0%, #fff8f0 100%);
+  border-radius: 14px;
+  padding: 48px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.12);
+  text-align: center;
+  border: 1px solid rgba(139,90,60,0.08);
+}
+
+.thank-title {
+  font-family: 'Georgia', serif;
+  font-size: 2.4rem;
+  margin: 0 0 8px 0;
+  color: #8b5a3c;
+}
+
+.thank-guest {
+  margin: 8px 0 16px 0;
+  font-weight: 600;
+  color: #5a3f2b;
+}
+
+.thank-message {
+  color: #4b3a2f;
+  line-height: 1.6;
+  margin-bottom: 22px;
+}
+
+.thank-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.back-btn {
+  background: transparent;
+  border: 1px solid #c9a06b;
+  color: #8b5a3c;
+  padding: 10px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.back-btn:hover { transform: translateY(-2px); }
+
+.print-btn { 
+  background: linear-gradient(90deg,#f6d365,#fda085);
+  border: none;
+  color: white;
+  padding: 10px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  .thankyou-card { padding: 30px; }
+  .thank-title { font-size: 1.9rem; }
+}
 @media (max-width: 480px) {
   .name-input-container {
     padding: 15px;
